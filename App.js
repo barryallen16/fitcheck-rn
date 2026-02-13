@@ -14,6 +14,7 @@ import GarmentDetailScreen from './src/screens/GarmentDetailScreen';
 import RecommendationScreen from './src/screens/RecommendationScreen';
 import ResultScreen from './src/screens/ResultScreen';
 import OutfitHistoryScreen from './src/screens/OutfitHistoryScreen';
+import OutfitCalendarScreen from './src/screens/OutfitCalendarScreen';
 import { COLORS } from './src/constants/theme';
 
 const Stack = createNativeStackNavigator();
@@ -75,6 +76,7 @@ export default function App() {
               <Stack.Screen name="Recommendation" component={RecommendationScreen} />
               <Stack.Screen name="Result" component={ResultScreen} />
               <Stack.Screen name="OutfitHistory" component={OutfitHistoryScreen} />
+              <Stack.Screen name="OutfitCalendar" component={OutfitCalendarScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </WardrobeProvider>
