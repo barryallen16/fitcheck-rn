@@ -14,22 +14,16 @@ export default function WardrobeScreen({ navigation }) {
   const [banner, setBanner] = useState(null);
 
   async function pickFromGallery() {
-    if (!serverOk) {
-      setBanner({ message: 'Connect to LM Studio first', type: 'error' });
-      return;
-    }
+    if (!serverOk) { setBanner({ message: 'Connect to LM Studio first', type: 'error' }); return; }
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        setBanner({ message: 'Photo library permission required', type: 'error' });
-        return;
-      }
+      if (status !== 'granted') { setBanner({ message: 'Photo library permission required', type: 'error' }); return; }
 
       const r = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsMultipleSelection: true,
         quality: 0.6,
-        selectionLimit: 10,
+        selectionLimit: 0,  // 0 = system maximum (unlimited)
       });
 
       if (!r.canceled && r.assets?.length) {
@@ -41,19 +35,11 @@ export default function WardrobeScreen({ navigation }) {
   }
 
   async function takePhoto() {
-    if (!serverOk) {
-      setBanner({ message: 'Connect to LM Studio first', type: 'error' });
-      return;
-    }
+    if (!serverOk) { setBanner({ message: 'Connect to LM Studio first', type: 'error' }); return; }
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        setBanner({ message: 'Camera permission required', type: 'error' });
-        return;
-      }
-
+      if (status !== 'granted') { setBanner({ message: 'Camera permission required', type: 'error' }); return; }
       const r = await ImagePicker.launchCameraAsync({ quality: 0.6 });
-
       if (!r.canceled && r.assets?.length) {
         navigation.navigate('Analyzing', { images: r.assets });
       }
@@ -78,13 +64,7 @@ export default function WardrobeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {banner && (
-        <ErrorBanner
-          message={banner.message}
-          type={banner.type}
-          onDismiss={() => setBanner(null)}
-        />
-      )}
+      {banner && <ErrorBanner message={banner.message} type={banner.type} onDismiss={() => setBanner(null)} />}
 
       <View style={s.hdr}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.back}>
@@ -110,10 +90,8 @@ export default function WardrobeScreen({ navigation }) {
       </View>
 
       <FlatList
-        data={wardrobe}
-        keyExtractor={(i) => i.id}
-        contentContainerStyle={s.list}
-        showsVerticalScrollIndicator={false}
+        data={wardrobe} keyExtractor={(i) => i.id}
+        contentContainerStyle={s.list} showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <GarmentCard
             garment={item}
@@ -125,9 +103,7 @@ export default function WardrobeScreen({ navigation }) {
           <View style={s.empty}>
             <Ionicons name="shirt-outline" size={60} color={COLORS.textMuted} />
             <Text style={s.emptyTitle}>No Garments Yet</Text>
-            <Text style={s.emptyDesc}>
-              Add photos of your clothes to build your wardrobe
-            </Text>
+            <Text style={s.emptyDesc}>Add photos of your clothes to build your wardrobe</Text>
           </View>
         }
       />
@@ -137,42 +113,14 @@ export default function WardrobeScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  hdr: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: GAP.lg,
-    paddingVertical: GAP.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
+  hdr: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: GAP.lg, paddingVertical: GAP.md, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   back: { padding: GAP.xs, marginRight: GAP.md },
   hdrTitle: { flex: 1, color: COLORS.text, fontSize: TYPE.xl, fontWeight: '700' },
-
   addRow: { flexDirection: 'row', paddingHorizontal: GAP.lg, paddingVertical: GAP.md, gap: GAP.md },
-  addBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primaryGlow,
-    borderRadius: RAD.md,
-    paddingVertical: GAP.md,
-    gap: GAP.sm,
-    borderWidth: 1,
-    borderColor: COLORS.primaryMuted,
-    borderStyle: 'dashed',
-  },
+  addBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryGlow, borderRadius: RAD.md, paddingVertical: GAP.md, gap: GAP.sm, borderWidth: 1, borderColor: COLORS.primaryMuted, borderStyle: 'dashed' },
   addTxt: { color: COLORS.primary, fontSize: TYPE.base, fontWeight: '600' },
-
   list: { paddingHorizontal: GAP.lg, paddingTop: GAP.sm, paddingBottom: GAP.huge },
-
   empty: { alignItems: 'center', paddingTop: GAP.huge * 2 },
   emptyTitle: { color: COLORS.text, fontSize: TYPE.xl, fontWeight: '700', marginTop: GAP.lg },
-  emptyDesc: {
-    color: COLORS.textDim,
-    fontSize: TYPE.base,
-    textAlign: 'center',
-    marginTop: GAP.sm,
-    paddingHorizontal: GAP.xxxl,
-  },
+  emptyDesc: { color: COLORS.textDim, fontSize: TYPE.base, textAlign: 'center', marginTop: GAP.sm, paddingHorizontal: GAP.xxxl },
 });
