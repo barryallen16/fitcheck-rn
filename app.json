@@ -4,11 +4,11 @@
     "slug": "fitcheck",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo-placeholder.png",
+    "icon": "./assets/logo-placeholder-bk.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#0e0e0e"
     },
     "ios": {
       "supportsTablet": false,
