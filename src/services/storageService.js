@@ -7,6 +7,8 @@ const KEYS = {
   OUTFITS: '@fc_outfits',
   USER_PHOTO: '@fc_user_photo',
   TRYON_HISTORY: '@fc_tryon_history',
+  PERSONAS: '@fc_personas',
+  ACTIVE: '@fc_active_persona',
 };
 
 export default {
@@ -20,4 +22,8 @@ export default {
   async loadUserPhoto() { try { return await AsyncStorage.getItem(KEYS.USER_PHOTO); } catch { return null; } },
   async saveTryOnHistory(h) { try { await AsyncStorage.setItem(KEYS.TRYON_HISTORY, JSON.stringify(h)); } catch {} },
   async loadTryOnHistory() { try { const v = await AsyncStorage.getItem(KEYS.TRYON_HISTORY); return v ? JSON.parse(v) : []; } catch { return []; } },
+  async savePersonas(p) { try { await AsyncStorage.setItem(KEYS.PERSONAS, JSON.stringify(p)); } catch {} },
+  async loadPersonas() { try { const v = await AsyncStorage.getItem(KEYS.PERSONAS); return v ? JSON.parse(v) : []; } catch { return []; } },
+  async saveActive(id) { try { await AsyncStorage.setItem(KEYS.ACTIVE, id); } catch {} },
+  async loadActive() { try { return await AsyncStorage.getItem(KEYS.ACTIVE); } catch { return null; } },
 };
