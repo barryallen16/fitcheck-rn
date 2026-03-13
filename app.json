@@ -1,29 +1,41 @@
 {
   "expo": {
     "name": "FitCheck",
-    "slug": "FitCheck",
+    "slug": "fitcheck",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/logo-placeholder.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0A0A0A"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.fitcheck.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "FitCheck needs access to your photos to analyze garments.",
+        "NSCameraUsageDescription": "FitCheck uses camera to photograph garments.",
+        "NSLocationWhenInUseUsageDescription": "FitCheck needs location for weather-based outfit suggestions."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+        "backgroundColor": "#0A0A0A"
+      },
+      "package": "com.fitcheck.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      "expo-image-picker",
+      "expo-location",
+      "expo-asset",
+      "expo-font"
+    ]
   }
 }
