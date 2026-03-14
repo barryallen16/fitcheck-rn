@@ -13,43 +13,25 @@ import AnalyzingScreen from './src/screens/AnalyzingScreen';
 import GarmentDetailScreen from './src/screens/GarmentDetailScreen';
 import RecommendationScreen from './src/screens/RecommendationScreen';
 import ResultScreen from './src/screens/ResultScreen';
+import OutfitHistoryScreen from './src/screens/OutfitHistoryScreen';
+import OutfitCalendarScreen from './src/screens/OutfitCalendarScreen';
+import TryOnScreen from './src/screens/TryOnScreen';
 import { COLORS } from './src/constants/theme';
 
 const Stack = createNativeStackNavigator();
-
-const defaultFontFamily = Platform.select({
-  ios: 'System',
-  android: 'sans-serif',
-  default: 'System',
-});
+const font = Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' });
 
 const navTheme = {
   dark: true,
   colors: {
-    primary: COLORS.primary,
-    background: COLORS.bg,
-    card: COLORS.card,
-    text: COLORS.text,
-    border: COLORS.border,
-    notification: COLORS.red,
+    primary: COLORS.primary, background: COLORS.bg, card: COLORS.card,
+    text: COLORS.text, border: COLORS.border, notification: COLORS.red,
   },
   fonts: {
-    regular: {
-      fontFamily: defaultFontFamily,
-      fontWeight: '400',
-    },
-    medium: {
-      fontFamily: defaultFontFamily,
-      fontWeight: '500',
-    },
-    bold: {
-      fontFamily: defaultFontFamily,
-      fontWeight: '700',
-    },
-    heavy: {
-      fontFamily: defaultFontFamily,
-      fontWeight: '800',
-    },
+    regular: { fontFamily: font, fontWeight: '400' },
+    medium: { fontFamily: font, fontWeight: '500' },
+    bold: { fontFamily: font, fontWeight: '700' },
+    heavy: { fontFamily: font, fontWeight: '800' },
   },
 };
 
@@ -73,6 +55,9 @@ export default function App() {
               <Stack.Screen name="GarmentDetail" component={GarmentDetailScreen} />
               <Stack.Screen name="Recommendation" component={RecommendationScreen} />
               <Stack.Screen name="Result" component={ResultScreen} />
+              <Stack.Screen name="OutfitHistory" component={OutfitHistoryScreen} />
+              <Stack.Screen name="OutfitCalendar" component={OutfitCalendarScreen} />
+              <Stack.Screen name="TryOn" component={TryOnScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </WardrobeProvider>

@@ -1,31 +1,44 @@
 // src/screens/ResultScreen.js
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useWardrobe } from '../context/WardrobeContext';
 import { COLORS, TYPE, GAP, RAD } from '../constants/theme';
+import { todayStr } from '../utils/helpers';
 
 export default function ResultScreen({ route, navigation }) {
   const { recommendation: rec, weather: w, wardrobe } = route.params;
+  const { addOutfit, wearOutfit, userPhoto } = useWardrobe();
+  const savedRef = useRef(false);
+  const [outfitId, setOutfitId] = useState(null);
+  const [worn, setWorn] = useState(false);
 
-  // Use pre-matched garments from validation, fallback to label search
-  const topG = rec._topGarment || findInWardrobe(rec.top_label, wardrobe);
-  const botG = rec._bottomGarment || findInWardrobe(rec.bottom_label, wardrobe);
+  const topG = rec._topGarment || wardrobe.find((g) => g.summary === rec.top_label);
+  const botG = rec._bottomGarment || wardrobe.find((g) => g.summary === rec.bottom_label);
 
-  function findInWardrobe(label, wd) {
-    if (!label || label === 'N/A') return null;
-    const lo = label.toLowerCase().trim();
-    return wd.find((g) => g.summary.toLowerCase().trim() === lo)
-      || wd.find((g) => lo.includes(g.summary.toLowerCase()) || g.summary.toLowerCase().includes(lo))
-      || null;
+  useEffect(() => {
+    if (!savedRef.current) {
+      savedRef.current = true;
+      const o = addOutfit({
+        topId: topG?.id || null, bottomId: botG?.id || null,
+        topLabel: rec.top_label, bottomLabel: rec.bottom_label,
+        colorLogic: rec.colorLogic, silhouetteLogic: rec.silhouetteLogic,
+        weather: w.formatted, weatherCity: w.city,
+      });
+      setOutfitId(o.id);
+    }
+  }, []);
+
+  function handleWearToday() {
+    if (outfitId) { wearOutfit(outfitId, todayStr()); setWorn(true); }
   }
 
   function weatherIcon() {
     const d = w.description.toLowerCase();
-    if (d.includes('rain') || d.includes('drizzle') || d.includes('shower')) return 'rainy';
+    if (d.includes('rain') || d.includes('drizzle')) return 'rainy';
     if (d.includes('cloud') || d.includes('overcast')) return 'cloudy';
     if (d.includes('snow')) return 'snow';
-    if (d.includes('thunder')) return 'thunderstorm';
     return 'sunny';
   }
 
@@ -34,7 +47,7 @@ export default function ResultScreen({ route, navigation }) {
     return (
       <View style={s.piece}>
         <Text style={s.pieceLabel}>{title}</Text>
-        <View style={[s.pieceCard, garment && s.pieceCardMatched]}>
+        <View style={[s.pieceCard, garment && s.pieceMatched]}>
           {garment ? (
             <>
               <Image source={{ uri: garment.imageUri }} style={s.pieceImg} />
@@ -45,10 +58,9 @@ export default function ResultScreen({ route, navigation }) {
               </View>
             </>
           ) : (
-            <View style={s.pieceNoMatch}>
+            <View style={s.noMatch}>
               <Ionicons name="help-circle-outline" size={30} color={COLORS.textMuted} />
-              <Text style={s.pieceNoMatchTxt}>"{label}"</Text>
-              <Text style={s.pieceNoMatchHint}>Could not match to wardrobe</Text>
+              <Text style={s.noMatchTxt}>"{label}"</Text>
             </View>
           )}
         </View>
@@ -67,7 +79,11 @@ export default function ResultScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        {/* Weather */}
+        <View style={s.savedBanner}>
+          <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
+          <Text style={s.savedTxt}>Outfit saved to history</Text>
+        </View>
+
         <View style={s.weatherCard}>
           <Ionicons name={weatherIcon()} size={28} color={COLORS.primary} />
           <View style={{ flex: 1, marginLeft: GAP.md }}>
@@ -77,19 +93,9 @@ export default function ResultScreen({ route, navigation }) {
         </View>
 
         <Text style={s.secLabel}>Recommended Outfit</Text>
-
         <Piece label={rec.top_label} garment={topG} title="Top / Upper" />
         <Piece label={rec.bottom_label} garment={botG} title="Bottom / Lower" />
 
-        {/* Duplicate warning */}
-        {topG && botG && topG.id === botG.id && (
-          <View style={s.warnCard}>
-            <Ionicons name="warning-outline" size={18} color={COLORS.orange} />
-            <Text style={s.warnTxt}>Same garment suggested for both — try generating again</Text>
-          </View>
-        )}
-
-        {/* Logic */}
         <View style={s.logicCard}>
           <View style={s.logicSec}>
             <View style={s.logicHdr}>
@@ -108,14 +114,55 @@ export default function ResultScreen({ route, navigation }) {
           </View>
         </View>
 
-        <TouchableOpacity style={s.retryBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-          <Ionicons name="refresh" size={20} color={COLORS.primary} />
-          <Text style={s.retryTxt}>Try Another Outfit</Text>
+        {/* ── Virtual Try-On Button ── */}
+        {topG && (
+          <TouchableOpacity
+            style={s.tryOnBtn}
+            onPress={() => navigation.navigate('TryOn', {
+              outfit: {
+                topId: topG?.id,
+                bottomId: botG?.id || null,
+                topLabel: rec.top_label,
+                bottomLabel: rec.bottom_label,
+              },
+              wardrobe,
+            })}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="person-outline" size={22} color={COLORS.bg} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.tryOnTxt}>Virtual Try-On</Text>
+              <Text style={s.tryOnSub}>See how this outfit looks on you</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.bg} />
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[s.wearBtn, worn && s.wornBtn]}
+          onPress={handleWearToday} activeOpacity={0.8} disabled={worn}
+        >
+          <Ionicons name={worn ? 'checkmark-circle' : 'shirt-outline'} size={22} color={worn ? COLORS.green : COLORS.bg} />
+          <Text style={[s.wearTxt, worn && { color: COLORS.green }]}>
+            {worn ? 'Marked as Worn Today!' : 'Wear Today'}
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={s.homeBtn} onPress={() => navigation.navigate('Home')} activeOpacity={0.8}>
-          <Text style={s.homeTxt}>Back to Home</Text>
+        <TouchableOpacity style={s.retryBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <Ionicons name="refresh" size={20} color={COLORS.primary} />
+          <Text style={s.retryTxt}>Generate Another</Text>
         </TouchableOpacity>
+
+        <View style={s.bottomRow}>
+          <TouchableOpacity style={s.bottomBtn} onPress={() => navigation.navigate('OutfitHistory')}>
+            <Ionicons name="layers-outline" size={18} color={COLORS.accent} />
+            <Text style={s.bottomBtnTxt}>History</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.bottomBtn} onPress={() => navigation.navigate('Home')}>
+            <Ionicons name="home-outline" size={18} color={COLORS.textDim} />
+            <Text style={s.bottomBtnTxt}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -123,75 +170,47 @@ export default function ResultScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  hdr: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: GAP.lg, paddingVertical: GAP.md,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-  },
+  hdr: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GAP.lg, paddingVertical: GAP.md, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   hdrTitle: { color: COLORS.text, fontSize: TYPE.xl, fontWeight: '700' },
   scroll: { paddingHorizontal: GAP.xl, paddingTop: GAP.lg, paddingBottom: GAP.huge * 2 },
-
-  weatherCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
-    borderRadius: RAD.lg, padding: GAP.lg, marginBottom: GAP.xl,
-    borderWidth: 1, borderColor: COLORS.border,
-  },
+  savedBanner: { flexDirection: 'row', alignItems: 'center', gap: GAP.sm, backgroundColor: COLORS.green + '12', borderRadius: RAD.md, padding: GAP.md, marginBottom: GAP.lg, borderWidth: 1, borderColor: COLORS.green + '30' },
+  savedTxt: { color: COLORS.green, fontSize: TYPE.sm, fontWeight: '500' },
+  weatherCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.lg, marginBottom: GAP.xl, borderWidth: 1, borderColor: COLORS.border },
   weatherMain: { color: COLORS.text, fontSize: TYPE.lg, fontWeight: '700' },
   weatherCity: { color: COLORS.textDim, fontSize: TYPE.sm, marginTop: 2 },
-
-  secLabel: {
-    color: COLORS.textDim, fontSize: TYPE.xs, fontWeight: '700',
-    textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: GAP.md,
-  },
-
+  secLabel: { color: COLORS.textDim, fontSize: TYPE.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: GAP.md },
   piece: { marginBottom: GAP.lg },
-  pieceLabel: {
-    color: COLORS.textMuted, fontSize: TYPE.xs, fontWeight: '600',
-    textTransform: 'uppercase', letterSpacing: 1, marginBottom: GAP.sm,
-  },
-  pieceCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
-    borderRadius: RAD.lg, padding: GAP.lg, borderWidth: 1, borderColor: COLORS.border,
-  },
-  pieceCardMatched: {
-    borderColor: COLORS.primaryMuted,
-  },
+  pieceLabel: { color: COLORS.textMuted, fontSize: TYPE.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: GAP.sm },
+  pieceCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.lg, borderWidth: 1, borderColor: COLORS.border },
+  pieceMatched: { borderColor: COLORS.primaryMuted },
   pieceImg: { width: 80, height: 80, borderRadius: RAD.md, backgroundColor: COLORS.cardLight },
   pieceName: { color: COLORS.text, fontSize: TYPE.lg, fontWeight: '700' },
-  pieceCat: {
-    color: COLORS.primary, fontSize: TYPE.xs, fontWeight: '700',
-    textTransform: 'uppercase', marginTop: GAP.xs,
-  },
+  pieceCat: { color: COLORS.primary, fontSize: TYPE.xs, fontWeight: '700', textTransform: 'uppercase', marginTop: GAP.xs },
   pieceDesc: { color: COLORS.textDim, fontSize: TYPE.xs, marginTop: GAP.xs, lineHeight: 16 },
-  pieceNoMatch: { flex: 1, alignItems: 'center', paddingVertical: GAP.md, gap: GAP.xs },
-  pieceNoMatchTxt: { color: COLORS.text, fontSize: TYPE.base, fontWeight: '600', textAlign: 'center' },
-  pieceNoMatchHint: { color: COLORS.textMuted, fontSize: TYPE.xs },
-
-  warnCard: {
-    flexDirection: 'row', alignItems: 'center', gap: GAP.sm,
-    backgroundColor: 'rgba(232,144,64,0.08)', borderRadius: RAD.md,
-    padding: GAP.md, marginBottom: GAP.lg,
-    borderWidth: 1, borderColor: 'rgba(232,144,64,0.25)',
-  },
-  warnTxt: { flex: 1, color: COLORS.orange, fontSize: TYPE.sm },
-
-  logicCard: {
-    backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.xl,
-    marginTop: GAP.sm, marginBottom: GAP.xl, borderWidth: 1, borderColor: COLORS.border,
-  },
+  noMatch: { flex: 1, alignItems: 'center', paddingVertical: GAP.md, gap: GAP.xs },
+  noMatchTxt: { color: COLORS.text, fontSize: TYPE.base, fontWeight: '600', textAlign: 'center' },
+  logicCard: { backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.xl, marginBottom: GAP.xl, borderWidth: 1, borderColor: COLORS.border },
   logicSec: { marginVertical: GAP.sm },
   logicHdr: { flexDirection: 'row', alignItems: 'center', gap: GAP.sm, marginBottom: GAP.sm },
   logicTitle: { color: COLORS.text, fontSize: TYPE.base, fontWeight: '700' },
   logicBody: { color: COLORS.textDim, fontSize: TYPE.sm, lineHeight: 22 },
   logicDiv: { height: 1, backgroundColor: COLORS.border, marginVertical: GAP.md },
 
-  retryBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: COLORS.primaryGlow, borderRadius: RAD.lg, paddingVertical: GAP.lg,
-    gap: GAP.sm, borderWidth: 1, borderColor: COLORS.primaryMuted, marginBottom: GAP.md,
+  // Try-On button
+  tryOnBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.accent, borderRadius: RAD.lg,
+    padding: GAP.lg, gap: GAP.md, marginBottom: GAP.md,
   },
-  retryTxt: { color: COLORS.primary, fontSize: TYPE.base, fontWeight: '700' },
+  tryOnTxt: { color: COLORS.bg, fontSize: TYPE.base, fontWeight: '700' },
+  tryOnSub: { color: COLORS.bg, fontSize: TYPE.xs, opacity: 0.7, marginTop: 1 },
 
-  homeBtn: { alignItems: 'center', paddingVertical: GAP.lg },
-  homeTxt: { color: COLORS.textDim, fontSize: TYPE.base, fontWeight: '500' },
+  wearBtn: { flexDirection: 'row', backgroundColor: COLORS.green, borderRadius: RAD.lg, paddingVertical: GAP.lg, justifyContent: 'center', alignItems: 'center', gap: GAP.sm, marginBottom: GAP.md },
+  wornBtn: { backgroundColor: COLORS.green + '15', borderWidth: 1, borderColor: COLORS.green + '40' },
+  wearTxt: { color: COLORS.bg, fontSize: TYPE.base, fontWeight: '700' },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryGlow, borderRadius: RAD.lg, paddingVertical: GAP.lg, gap: GAP.sm, borderWidth: 1, borderColor: COLORS.primaryMuted, marginBottom: GAP.lg },
+  retryTxt: { color: COLORS.primary, fontSize: TYPE.base, fontWeight: '700' },
+  bottomRow: { flexDirection: 'row', justifyContent: 'center', gap: GAP.xxxl },
+  bottomBtn: { flexDirection: 'row', alignItems: 'center', gap: GAP.sm, padding: GAP.md },
+  bottomBtnTxt: { color: COLORS.textDim, fontSize: TYPE.sm, fontWeight: '500' },
 });

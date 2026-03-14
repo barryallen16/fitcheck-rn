@@ -1,8 +1,11 @@
+// src/screens/HomeScreen.js
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, RefreshControl,
+  TextInput, RefreshControl
 } from 'react-native';
+import { Image } from 'expo-image';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,7 +14,7 @@ import ErrorBanner from '../components/ErrorBanner';
 import { COLORS, TYPE, GAP, RAD } from '../constants/theme';
 
 export default function HomeScreen({ navigation }) {
-  const { wardrobe, serverUrl, serverOk, modelName, setServerUrl, ping } = useWardrobe();
+  const { wardrobe, outfits, serverUrl, serverOk, modelName, setServerUrl, ping } = useWardrobe();
   const [showCfg, setShowCfg] = useState(false);
   const [urlDraft, setUrlDraft] = useState(serverUrl);
   const [connecting, setConnecting] = useState(false);
@@ -37,7 +40,9 @@ export default function HomeScreen({ navigation }) {
   async function onRefresh() { setRefreshing(true); await ping(); setRefreshing(false); }
 
   const catCount = new Set(wardrobe.map((g) => g.category)).size;
-
+  const wornCount = outfits.filter((o) => o.status === 'worn').length;
+  const unwornCount = outfits.filter((o) => o.status === 'unworn').length;
+const blurhash = 'L79i;qIq0yxHoaoLoMWV02%0}@NZ';
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       {banner && <ErrorBanner message={banner.message} type={banner.type} onDismiss={() => setBanner(null)} />}
@@ -47,79 +52,58 @@ export default function HomeScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
-        {/* ── Logo ─────────────────────── */}
-        <View style={s.logoWrap}>
-          {/* REPLACE this View with <Image source={require('../../assets/logo-placeholder.png')} style={s.logoImg} /> */}
-          <View style={s.logoCircle}>
-            <Ionicons name="shirt" size={44} color={COLORS.primary} />
-          </View>
-          <Text style={s.appName}>FitCheck</Text>
-          <Text style={s.tagline}>AI-Powered Outfit Recommendations</Text>
-        </View>
-
-        {/* ── Server Status ────────────── */}
+{/* Logo */}
+<View style={s.logoWrap}>
+  <Image
+    style={s.logoCircle} // <-- Applied your unused style here for dimensions!
+    source={require('../../assets/logo-placeholder-bk.png')} // <-- Wrapped path in require()
+    placeholder={{ blurhash }}
+    contentFit="cover"
+    transition={1000}
+  />
+  <Text style={s.tagline}>AI-Powered Outfit Recommendations</Text>
+</View>
+        {/* Server */}
         <TouchableOpacity
           style={[s.statusCard, serverOk ? s.statusGreen : s.statusRed]}
-          onPress={() => setShowCfg((p) => !p)}
-          activeOpacity={0.7}
+          onPress={() => setShowCfg((p) => !p)} activeOpacity={0.7}
         >
           <View style={s.statusRow}>
             <View style={[s.dot, { backgroundColor: serverOk ? COLORS.green : COLORS.red }]} />
             <View style={{ flex: 1 }}>
-              <Text style={s.statusTxt}>
-                {serverOk ? 'LM Studio Connected' : 'LM Studio Disconnected'}
-              </Text>
-              {serverOk && modelName && (
-                <Text style={s.modelTxt} numberOfLines={1}>{modelName}</Text>
-              )}
+              <Text style={s.statusTxt}>{serverOk ? 'LM Studio Connected' : 'LM Studio Disconnected'}</Text>
+              {serverOk && modelName && <Text style={s.modelTxt} numberOfLines={1}>{modelName}</Text>}
             </View>
             <Ionicons name={showCfg ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.textDim} />
           </View>
-
           {showCfg && (
             <View style={s.cfgBox}>
               <Text style={s.cfgLabel}>LM Studio Server URL</Text>
               <View style={s.urlRow}>
                 <TextInput
-                  style={s.urlInput}
-                  value={urlDraft}
-                  onChangeText={setUrlDraft}
-                  placeholder="http://10.101.237.83:1234"
-                  placeholderTextColor={COLORS.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
+                  style={s.urlInput} value={urlDraft} onChangeText={setUrlDraft}
+                  placeholder="http://192.168.1.100:1234" placeholderTextColor={COLORS.textMuted}
+                  autoCapitalize="none" autoCorrect={false} keyboardType="url"
                 />
-                <TouchableOpacity
-                  style={[s.connectBtn, connecting && { opacity: 0.5 }]}
-                  onPress={handleConnect}
-                  disabled={connecting}
-                >
+                <TouchableOpacity style={[s.connectBtn, connecting && { opacity: 0.5 }]} onPress={handleConnect} disabled={connecting}>
                   <Text style={s.connectTxt}>{connecting ? '...' : 'Connect'}</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={s.hint}>
-                LM Studio → Developer → Serve on Local Network{'\n'}
-                Default port: 1234
-              </Text>
+              <Text style={s.hint}>LM Studio → Developer → Serve on Local Network</Text>
             </View>
           )}
         </TouchableOpacity>
 
-        {/* ── Stats ────────────────────── */}
+        {/* Stats */}
         <View style={s.statsRow}>
-          <View style={s.stat}>
-            <Text style={s.statNum}>{wardrobe.length}</Text>
-            <Text style={s.statLbl}>Garments</Text>
-          </View>
+          <View style={s.stat}><Text style={s.statNum}>{wardrobe.length}</Text><Text style={s.statLbl}>Garments</Text></View>
           <View style={s.statDiv} />
-          <View style={s.stat}>
-            <Text style={s.statNum}>{catCount}</Text>
-            <Text style={s.statLbl}>Categories</Text>
-          </View>
+          <View style={s.stat}><Text style={s.statNum}>{catCount}</Text><Text style={s.statLbl}>Categories</Text></View>
+          <View style={s.statDiv} />
+          <View style={s.stat}><Text style={s.statNum}>{outfits.length}</Text><Text style={s.statLbl}>Outfits</Text></View>
         </View>
 
-        {/* ── Actions ──────────────────── */}
+        {/* Actions */}
         <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Wardrobe')} activeOpacity={0.8}>
           <Ionicons name="add-circle-outline" size={24} color={COLORS.bg} />
           <View style={{ flex: 1 }}>
@@ -133,19 +117,43 @@ export default function HomeScreen({ navigation }) {
           style={[s.btnSecondary, wardrobe.length < 2 && { opacity: 0.4 }]}
           activeOpacity={0.8}
           onPress={() => {
-            if (wardrobe.length < 2) { setBanner({ message: `Add at least 2 garments first (have ${wardrobe.length})`, type: 'warning' }); return; }
+            if (wardrobe.length < 2) { setBanner({ message: `Add at least 2 garments first`, type: 'warning' }); return; }
             if (!serverOk) { setBanner({ message: 'Connect to LM Studio first', type: 'error' }); return; }
             navigation.navigate('Recommendation');
           }}
         >
           <Ionicons name="sparkles" size={24} color={wardrobe.length < 2 ? COLORS.textMuted : COLORS.primary} />
           <View style={{ flex: 1 }}>
-            <Text style={[s.btnSTxt, wardrobe.length < 2 && { color: COLORS.textMuted }]}>
-              Get Outfit Recommendation
-            </Text>
-            <Text style={s.btnSSub}>
-              {wardrobe.length < 2 ? `Need ${2 - wardrobe.length} more` : 'AI-powered styling'}
-            </Text>
+            <Text style={[s.btnSTxt, wardrobe.length < 2 && { color: COLORS.textMuted }]}>Get Outfit Recommendation</Text>
+            <Text style={s.btnSSub}>{wardrobe.length < 2 ? `Need ${2 - wardrobe.length} more` : 'AI-powered styling'}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[s.btnSecondary, outfits.length === 0 && { opacity: 0.4 }]}
+          activeOpacity={0.8}
+          onPress={() => {
+            if (outfits.length === 0) { setBanner({ message: 'Generate some outfits first', type: 'warning' }); return; }
+            navigation.navigate('OutfitHistory');
+          }}
+        >
+          <Ionicons name="layers-outline" size={24} color={outfits.length ? COLORS.accent : COLORS.textMuted} />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.btnSTxt, outfits.length === 0 && { color: COLORS.textMuted }]}>Outfit History</Text>
+            <Text style={s.btnSSub}>{unwornCount} unworn · {wornCount} worn</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={s.btnSecondary} activeOpacity={0.8}
+          onPress={() => navigation.navigate('OutfitCalendar')}
+        >
+          <Ionicons name="calendar-outline" size={24} color={COLORS.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.btnSTxt}>Outfit Calendar</Text>
+            <Text style={s.btnSSub}>See what you wore each day</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
         </TouchableOpacity>
@@ -163,10 +171,8 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: GAP.md,
     borderWidth: 2, borderColor: COLORS.primaryMuted,
   },
-  // logoImg: { width: 88, height: 88, borderRadius: 44 },
   appName: { fontSize: TYPE.hero, fontWeight: '800', color: COLORS.primary, letterSpacing: 1 },
   tagline: { fontSize: TYPE.sm, color: COLORS.textDim, marginTop: GAP.xs },
-
   statusCard: { borderRadius: RAD.lg, padding: GAP.lg, marginBottom: GAP.lg, borderWidth: 1 },
   statusGreen: { backgroundColor: 'rgba(67,184,104,0.06)', borderColor: 'rgba(67,184,104,0.25)' },
   statusRed: { backgroundColor: 'rgba(232,84,84,0.06)', borderColor: 'rgba(232,84,84,0.25)' },
@@ -174,40 +180,22 @@ const s = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: GAP.sm },
   statusTxt: { color: COLORS.text, fontSize: TYPE.base, fontWeight: '500' },
   modelTxt: { color: COLORS.textDim, fontSize: TYPE.xs, marginTop: 2 },
-
   cfgBox: { marginTop: GAP.lg, paddingTop: GAP.lg, borderTopWidth: 1, borderTopColor: COLORS.border },
   cfgLabel: { color: COLORS.textDim, fontSize: TYPE.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: GAP.sm },
   urlRow: { flexDirection: 'row', gap: GAP.sm },
-  urlInput: {
-    flex: 1, backgroundColor: COLORS.cardLight, color: COLORS.text,
-    borderRadius: RAD.sm, paddingHorizontal: GAP.md, paddingVertical: GAP.sm,
-    fontSize: TYPE.sm, borderWidth: 1, borderColor: COLORS.border,
-  },
+  urlInput: { flex: 1, backgroundColor: COLORS.cardLight, color: COLORS.text, borderRadius: RAD.sm, paddingHorizontal: GAP.md, paddingVertical: GAP.sm, fontSize: TYPE.sm, borderWidth: 1, borderColor: COLORS.border },
   connectBtn: { backgroundColor: COLORS.primary, borderRadius: RAD.sm, paddingHorizontal: GAP.lg, justifyContent: 'center' },
   connectTxt: { color: COLORS.bg, fontSize: TYPE.sm, fontWeight: '700' },
   hint: { color: COLORS.textMuted, fontSize: TYPE.xs, marginTop: GAP.sm, lineHeight: 18 },
-
-  statsRow: {
-    flexDirection: 'row', backgroundColor: COLORS.card, borderRadius: RAD.lg,
-    padding: GAP.xl, marginBottom: GAP.lg, borderWidth: 1, borderColor: COLORS.border,
-  },
+  statsRow: { flexDirection: 'row', backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.xl, marginBottom: GAP.lg, borderWidth: 1, borderColor: COLORS.border },
   stat: { flex: 1, alignItems: 'center' },
   statNum: { fontSize: TYPE.xxl, fontWeight: '800', color: COLORS.primary },
   statLbl: { fontSize: TYPE.xs, color: COLORS.textDim, marginTop: GAP.xs, textTransform: 'uppercase', letterSpacing: 1 },
-  statDiv: { width: 1, backgroundColor: COLORS.border, marginHorizontal: GAP.lg },
-
-  btnPrimary: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary,
-    borderRadius: RAD.lg, padding: GAP.lg, marginBottom: GAP.md, gap: GAP.md,
-  },
+  statDiv: { width: 1, backgroundColor: COLORS.border, marginHorizontal: GAP.md },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, borderRadius: RAD.lg, padding: GAP.lg, marginBottom: GAP.md, gap: GAP.md },
   btnPTxt: { color: COLORS.bg, fontSize: TYPE.lg, fontWeight: '700' },
   btnPSub: { color: COLORS.bg, fontSize: TYPE.xs, opacity: 0.7, marginTop: 2 },
-
-  btnSecondary: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
-    borderRadius: RAD.lg, padding: GAP.lg, marginBottom: GAP.md, gap: GAP.md,
-    borderWidth: 1, borderColor: COLORS.border,
-  },
+  btnSecondary: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.lg, marginBottom: GAP.md, gap: GAP.md, borderWidth: 1, borderColor: COLORS.border },
   btnSTxt: { color: COLORS.text, fontSize: TYPE.lg, fontWeight: '700' },
   btnSSub: { color: COLORS.textDim, fontSize: TYPE.xs, marginTop: 2 },
 });
