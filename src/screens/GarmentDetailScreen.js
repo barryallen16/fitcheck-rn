@@ -2,14 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe } from '../context/WardrobeContext';
+import { useApp } from '../context/AppContext';
 import { COLORS, TYPE, GAP, RAD } from '../constants/theme';
 
 const W = Dimensions.get('window').width;
 
 export default function GarmentDetailScreen({ route, navigation }) {
   const { garment } = route.params;
-  const { removeGarment } = useWardrobe();
+  const { removeGarment } =  useApp();
 
   function handleDel() {
     Alert.alert('Remove', `Remove "${garment.summary}"?`, [

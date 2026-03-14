@@ -1,4 +1,3 @@
-// src/components/OutfitCard.js
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +7,7 @@ export default function OutfitCard({ outfit, wardrobe, onWear, onUnwear, onDelet
   const topG = wardrobe.find((g) => g.id === outfit.topId);
   const botG = wardrobe.find((g) => g.id === outfit.bottomId);
   const isWorn = outfit.status === 'worn';
+  const hasTryOn = !!outfit.tryOnImageUri;
 
   return (
     <TouchableOpacity
@@ -15,68 +15,66 @@ export default function OutfitCard({ outfit, wardrobe, onWear, onUnwear, onDelet
       activeOpacity={0.7}
       onPress={onPress}
     >
-      {/* Images row */}
       <View style={s.imgRow}>
-        {topG ? (
-          <Image source={{ uri: topG.imageUri }} style={s.img} />
+        {hasTryOn ? (
+          <Image source={{ uri: outfit.tryOnImageUri }} style={s.tryOnThumb} />
         ) : (
-          <View style={[s.img, s.placeholder]}>
-            <Ionicons name="shirt-outline" size={22} color={COLORS.textMuted} />
-          </View>
-        )}
-        {outfit.bottomLabel !== 'N/A' && (
-          botG ? (
-            <Image source={{ uri: botG.imageUri }} style={s.img} />
-          ) : (
-            <View style={[s.img, s.placeholder]}>
-              <Ionicons name="cut-outline" size={22} color={COLORS.textMuted} />
-            </View>
-          )
+          <>
+            {topG ? (
+              <Image source={{ uri: topG.imageUri }} style={s.img} />
+            ) : (
+              <View style={[s.img, s.ph]}><Ionicons name="shirt-outline" size={20} color={COLORS.textMuted} /></View>
+            )}
+            {outfit.bottomLabel !== 'N/A' && (
+              botG ? (
+                <Image source={{ uri: botG.imageUri }} style={s.img} />
+              ) : (
+                <View style={[s.img, s.ph]}><Ionicons name="cut-outline" size={20} color={COLORS.textMuted} /></View>
+              )
+            )}
+          </>
         )}
       </View>
 
-      {/* Labels */}
       <View style={s.info}>
         <Text style={s.topLabel} numberOfLines={1}>{outfit.topLabel}</Text>
         {outfit.bottomLabel !== 'N/A' && (
           <Text style={s.botLabel} numberOfLines={1}>+ {outfit.bottomLabel}</Text>
         )}
         <Text style={s.weather} numberOfLines={1}>{outfit.weather}</Text>
-        {isWorn && outfit.wornDate && (
-          <View style={s.wornBadge}>
-            <Ionicons name="checkmark-circle" size={12} color={COLORS.green} />
-            <Text style={s.wornDate}>Worn {outfit.wornDate}</Text>
-          </View>
-        )}
+        <View style={s.tagRow}>
+          {isWorn && (
+            <View style={s.tag}>
+              <Ionicons name="checkmark-circle" size={11} color={COLORS.green} />
+              <Text style={[s.tagTxt, { color: COLORS.green }]}>{outfit.wornDate}</Text>
+            </View>
+          )}
+          {hasTryOn && (
+            <View style={[s.tag, { backgroundColor: COLORS.accentGlow }]}>
+              <Ionicons name="person" size={11} color={COLORS.accent} />
+              <Text style={[s.tagTxt, { color: COLORS.accent }]}>Try-On</Text>
+            </View>
+          )}
+        </View>
       </View>
 
-      {/* Actions */}
       <View style={s.actions}>
         {isWorn ? (
-          <TouchableOpacity
-            onPress={() => onUnwear?.(outfit.id)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={s.actionBtn}
-          >
+          <TouchableOpacity onPress={() => onUnwear?.(outfit.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={s.actBtn}>
             <Ionicons name="close-circle-outline" size={20} color={COLORS.orange} />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
-            onPress={() => onWear?.(outfit.id)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={s.actionBtn}
-          >
+          <TouchableOpacity onPress={() => onWear?.(outfit.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={s.actBtn}>
             <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.green} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          onPress={() => onDelete?.(outfit.id)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={s.actionBtn}
-        >
-          <Ionicons name="trash-outline" size={18} color={COLORS.red} />
+        <TouchableOpacity onPress={() => onDelete?.(outfit.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={s.actBtn}>
+          <Ionicons name="trash-outline" size={17} color={COLORS.red} />
         </TouchableOpacity>
       </View>
+
+      {/* Chevron to show it's tappable */}
+      <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} style={{ marginLeft: GAP.xs }} />
     </TouchableOpacity>
   );
 }
@@ -88,16 +86,18 @@ const s = StyleSheet.create({
     padding: GAP.md, marginBottom: GAP.md,
     borderWidth: 1, borderColor: COLORS.border,
   },
-  cardWorn: { borderColor: COLORS.green + '40', backgroundColor: COLORS.green + '08' },
+  cardWorn: { borderColor: COLORS.green + '40', backgroundColor: COLORS.green + '06' },
   imgRow: { flexDirection: 'row', gap: GAP.xs },
-  img: { width: 50, height: 50, borderRadius: RAD.sm, backgroundColor: COLORS.cardLight },
-  placeholder: { justifyContent: 'center', alignItems: 'center' },
+  img: { width: 48, height: 48, borderRadius: RAD.sm, backgroundColor: COLORS.cardLight },
+  tryOnThumb: { width: 48, height: 64, borderRadius: RAD.sm, backgroundColor: COLORS.cardLight },
+  ph: { justifyContent: 'center', alignItems: 'center' },
   info: { flex: 1, marginLeft: GAP.md },
   topLabel: { color: COLORS.text, fontSize: TYPE.sm, fontWeight: '600' },
   botLabel: { color: COLORS.textDim, fontSize: TYPE.xs, marginTop: 1 },
   weather: { color: COLORS.textMuted, fontSize: TYPE.xs, marginTop: GAP.xs },
-  wornBadge: { flexDirection: 'row', alignItems: 'center', gap: GAP.xs, marginTop: GAP.xs },
-  wornDate: { color: COLORS.green, fontSize: TYPE.xs },
+  tagRow: { flexDirection: 'row', gap: GAP.sm, marginTop: GAP.xs, flexWrap: 'wrap' },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: COLORS.green + '12', paddingHorizontal: GAP.sm, paddingVertical: 1, borderRadius: RAD.full },
+  tagTxt: { fontSize: 10, fontWeight: '600' },
   actions: { gap: GAP.sm, marginLeft: GAP.sm },
-  actionBtn: { padding: GAP.xs },
+  actBtn: { padding: GAP.xs },
 });

@@ -3,12 +3,13 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe } from '../context/WardrobeContext';
+import { useApp } from '../context/AppContext';
+
 import SimpleCalendar from '../components/SimpleCalendar';
 import { COLORS, TYPE, GAP, RAD } from '../constants/theme';
 
 export default function OutfitCalendarScreen({ navigation }) {
-  const { outfits, wardrobe, outfitsForDate } = useWardrobe();
+  const { outfits, wardrobe, outfitsForDate } =  useApp();
   const [selectedDate, setSelectedDate] = useState(null);
 
   // Build map of dates that have outfits

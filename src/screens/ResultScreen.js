@@ -1,15 +1,14 @@
-// src/screens/ResultScreen.js
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe } from '../context/WardrobeContext';
+import { useApp } from '../context/AppContext';
 import { COLORS, TYPE, GAP, RAD } from '../constants/theme';
 import { todayStr } from '../utils/helpers';
 
 export default function ResultScreen({ route, navigation }) {
   const { recommendation: rec, weather: w, wardrobe } = route.params;
-  const { addOutfit, wearOutfit, userPhoto } = useWardrobe();
+  const { addOutfit, wearOutfit, fullBodyPhoto } = useApp();
   const savedRef = useRef(false);
   const [outfitId, setOutfitId] = useState(null);
   const [worn, setWorn] = useState(false);
@@ -30,10 +29,6 @@ export default function ResultScreen({ route, navigation }) {
     }
   }, []);
 
-  function handleWearToday() {
-    if (outfitId) { wearOutfit(outfitId, todayStr()); setWorn(true); }
-  }
-
   function weatherIcon() {
     const d = w.description.toLowerCase();
     if (d.includes('rain') || d.includes('drizzle')) return 'rainy';
@@ -49,19 +44,14 @@ export default function ResultScreen({ route, navigation }) {
         <Text style={s.pieceLabel}>{title}</Text>
         <View style={[s.pieceCard, garment && s.pieceMatched]}>
           {garment ? (
-            <>
-              <Image source={{ uri: garment.imageUri }} style={s.pieceImg} />
-              <View style={{ flex: 1, marginLeft: GAP.md }}>
-                <Text style={s.pieceName}>{garment.summary}</Text>
-                <Text style={s.pieceCat}>{garment.category}</Text>
-                <Text style={s.pieceDesc} numberOfLines={2}>{garment.analyzed_garment}</Text>
-              </View>
-            </>
+            <><Image source={{ uri: garment.imageUri }} style={s.pieceImg} />
+            <View style={{ flex: 1, marginLeft: GAP.md }}>
+              <Text style={s.pieceName}>{garment.summary}</Text>
+              <Text style={s.pieceCat}>{garment.category}</Text>
+              <Text style={s.pieceDesc} numberOfLines={2}>{garment.analyzed_garment}</Text>
+            </View></>
           ) : (
-            <View style={s.noMatch}>
-              <Ionicons name="help-circle-outline" size={30} color={COLORS.textMuted} />
-              <Text style={s.noMatchTxt}>"{label}"</Text>
-            </View>
+            <View style={s.noMatch}><Text style={s.noMatchTxt}>"{label}"</Text></View>
           )}
         </View>
       </View>
@@ -69,7 +59,7 @@ export default function ResultScreen({ route, navigation }) {
   }
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <SafeAreaView style={s.c} edges={['top']}>
       <View style={s.hdr}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: GAP.xs }}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -81,14 +71,14 @@ export default function ResultScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <View style={s.savedBanner}>
           <Ionicons name="checkmark-circle" size={18} color={COLORS.green} />
-          <Text style={s.savedTxt}>Outfit saved to history</Text>
+          <Text style={s.savedTxt}>Saved to history</Text>
         </View>
 
         <View style={s.weatherCard}>
-          <Ionicons name={weatherIcon()} size={28} color={COLORS.primary} />
+          <Ionicons name={weatherIcon()} size={26} color={COLORS.primary} />
           <View style={{ flex: 1, marginLeft: GAP.md }}>
             <Text style={s.weatherMain}>{w.formatted}</Text>
-            <Text style={s.weatherCity}>{w.city}{w.fallback ? ' (estimated)' : ''}</Text>
+            <Text style={s.weatherCity}>{w.city}{w.fallback ? ' (est)' : ''}</Text>
           </View>
         </View>
 
@@ -98,53 +88,43 @@ export default function ResultScreen({ route, navigation }) {
 
         <View style={s.logicCard}>
           <View style={s.logicSec}>
-            <View style={s.logicHdr}>
-              <Ionicons name="color-palette-outline" size={20} color={COLORS.primary} />
-              <Text style={s.logicTitle}>Color Logic</Text>
-            </View>
+            <View style={s.logicHdr}><Ionicons name="color-palette-outline" size={18} color={COLORS.primary} /><Text style={s.logicTitle}>Color Logic</Text></View>
             <Text style={s.logicBody}>{rec.colorLogic}</Text>
           </View>
           <View style={s.logicDiv} />
           <View style={s.logicSec}>
-            <View style={s.logicHdr}>
-              <Ionicons name="body-outline" size={20} color={COLORS.accent} />
-              <Text style={s.logicTitle}>Silhouette Logic</Text>
-            </View>
+            <View style={s.logicHdr}><Ionicons name="body-outline" size={18} color={COLORS.accent} /><Text style={s.logicTitle}>Silhouette Logic</Text></View>
             <Text style={s.logicBody}>{rec.silhouetteLogic}</Text>
           </View>
         </View>
 
-        {/* ── Virtual Try-On Button ── */}
-        {topG && (
+        {/* Virtual Try-On */}
+        {topG && outfitId && (
           <TouchableOpacity
             style={s.tryOnBtn}
-            onPress={() => navigation.navigate('TryOn', {
-              outfit: {
-                topId: topG?.id,
-                bottomId: botG?.id || null,
-                topLabel: rec.top_label,
-                bottomLabel: rec.bottom_label,
-              },
-              wardrobe,
-            })}
+            onPress={() => navigation.navigate('TryOn', { outfitId })}
             activeOpacity={0.8}
           >
             <Ionicons name="person-outline" size={22} color={COLORS.bg} />
             <View style={{ flex: 1 }}>
               <Text style={s.tryOnTxt}>Virtual Try-On</Text>
-              <Text style={s.tryOnSub}>See how this outfit looks on you</Text>
+              <Text style={s.tryOnSub}>
+                {fullBodyPhoto ? 'See how this looks on you' : 'Add body photo in Me tab first'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.bg} />
           </TouchableOpacity>
         )}
 
+        {/* Wear */}
         <TouchableOpacity
           style={[s.wearBtn, worn && s.wornBtn]}
-          onPress={handleWearToday} activeOpacity={0.8} disabled={worn}
+          onPress={() => { if (outfitId && !worn) { wearOutfit(outfitId, todayStr()); setWorn(true); } }}
+          activeOpacity={0.8} disabled={worn}
         >
           <Ionicons name={worn ? 'checkmark-circle' : 'shirt-outline'} size={22} color={worn ? COLORS.green : COLORS.bg} />
           <Text style={[s.wearTxt, worn && { color: COLORS.green }]}>
-            {worn ? 'Marked as Worn Today!' : 'Wear Today'}
+            {worn ? 'Marked as Worn!' : 'Wear Today'}
           </Text>
         </TouchableOpacity>
 
@@ -158,10 +138,6 @@ export default function ResultScreen({ route, navigation }) {
             <Ionicons name="layers-outline" size={18} color={COLORS.accent} />
             <Text style={s.bottomBtnTxt}>History</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.bottomBtn} onPress={() => navigation.navigate('Home')}>
-            <Ionicons name="home-outline" size={18} color={COLORS.textDim} />
-            <Text style={s.bottomBtnTxt}>Home</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -169,7 +145,7 @@ export default function ResultScreen({ route, navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  c: { flex: 1, backgroundColor: COLORS.bg },
   hdr: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GAP.lg, paddingVertical: GAP.md, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   hdrTitle: { color: COLORS.text, fontSize: TYPE.xl, fontWeight: '700' },
   scroll: { paddingHorizontal: GAP.xl, paddingTop: GAP.lg, paddingBottom: GAP.huge * 2 },
@@ -183,28 +159,21 @@ const s = StyleSheet.create({
   pieceLabel: { color: COLORS.textMuted, fontSize: TYPE.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: GAP.sm },
   pieceCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.lg, borderWidth: 1, borderColor: COLORS.border },
   pieceMatched: { borderColor: COLORS.primaryMuted },
-  pieceImg: { width: 80, height: 80, borderRadius: RAD.md, backgroundColor: COLORS.cardLight },
+  pieceImg: { width: 76, height: 76, borderRadius: RAD.md, backgroundColor: COLORS.cardLight },
   pieceName: { color: COLORS.text, fontSize: TYPE.lg, fontWeight: '700' },
   pieceCat: { color: COLORS.primary, fontSize: TYPE.xs, fontWeight: '700', textTransform: 'uppercase', marginTop: GAP.xs },
   pieceDesc: { color: COLORS.textDim, fontSize: TYPE.xs, marginTop: GAP.xs, lineHeight: 16 },
-  noMatch: { flex: 1, alignItems: 'center', paddingVertical: GAP.md, gap: GAP.xs },
-  noMatchTxt: { color: COLORS.text, fontSize: TYPE.base, fontWeight: '600', textAlign: 'center' },
+  noMatch: { flex: 1, alignItems: 'center', paddingVertical: GAP.md },
+  noMatchTxt: { color: COLORS.text, fontSize: TYPE.base, fontWeight: '600' },
   logicCard: { backgroundColor: COLORS.card, borderRadius: RAD.lg, padding: GAP.xl, marginBottom: GAP.xl, borderWidth: 1, borderColor: COLORS.border },
   logicSec: { marginVertical: GAP.sm },
   logicHdr: { flexDirection: 'row', alignItems: 'center', gap: GAP.sm, marginBottom: GAP.sm },
   logicTitle: { color: COLORS.text, fontSize: TYPE.base, fontWeight: '700' },
   logicBody: { color: COLORS.textDim, fontSize: TYPE.sm, lineHeight: 22 },
   logicDiv: { height: 1, backgroundColor: COLORS.border, marginVertical: GAP.md },
-
-  // Try-On button
-  tryOnBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.accent, borderRadius: RAD.lg,
-    padding: GAP.lg, gap: GAP.md, marginBottom: GAP.md,
-  },
+  tryOnBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.accent, borderRadius: RAD.lg, padding: GAP.lg, gap: GAP.md, marginBottom: GAP.md },
   tryOnTxt: { color: COLORS.bg, fontSize: TYPE.base, fontWeight: '700' },
   tryOnSub: { color: COLORS.bg, fontSize: TYPE.xs, opacity: 0.7, marginTop: 1 },
-
   wearBtn: { flexDirection: 'row', backgroundColor: COLORS.green, borderRadius: RAD.lg, paddingVertical: GAP.lg, justifyContent: 'center', alignItems: 'center', gap: GAP.sm, marginBottom: GAP.md },
   wornBtn: { backgroundColor: COLORS.green + '15', borderWidth: 1, borderColor: COLORS.green + '40' },
   wearTxt: { color: COLORS.bg, fontSize: TYPE.base, fontWeight: '700' },

@@ -1,4 +1,4 @@
-// src/utils/helpers.js
+import * as FileSystem from 'expo-file-system';
 
 export function uid() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
@@ -9,15 +9,11 @@ export function extractJSON(raw) {
   s = s.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '');
   const m = s.match(/\{[\s\S]*\}/);
   if (!m) return null;
-  try {
-    return JSON.parse(m[0]);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(m[0]); } catch { return null; }
 }
 
 export function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 export function randomBetween(min, max) {
@@ -46,34 +42,31 @@ export function getSlot(category) {
   return 'OTHER';
 }
 
+export function getSlotLabel(cat) {
+  if (TOP_CATS.includes(cat)) return 'Top';
+  if (BOTTOM_CATS.includes(cat)) return 'Bottom';
+  if (FULL_CATS.includes(cat)) return 'Full-body';
+  return 'Accessory';
+}
+
 export function getUnusedCombinations(wardrobe, outfits) {
   const tops = wardrobe.filter((g) => TOP_CATS.includes(g.category));
   const bottoms = wardrobe.filter((g) => BOTTOM_CATS.includes(g.category));
   const fullBody = wardrobe.filter((g) => FULL_CATS.includes(g.category));
-
   const usedKeys = new Set(outfits.map((o) => comboKey(o.topId, o.bottomId)));
   const unused = [];
-
-  for (const top of tops) {
-    for (const bot of bottoms) {
-      if (!usedKeys.has(comboKey(top.id, bot.id))) {
-        unused.push({ top, bottom: bot });
-      }
-    }
+  for (const t of tops) for (const b of bottoms) {
+    if (!usedKeys.has(comboKey(t.id, b.id))) unused.push({ top: t, bottom: b });
   }
-
-  for (const fb of fullBody) {
-    if (!usedKeys.has(comboKey(fb.id, null))) {
-      unused.push({ top: fb, bottom: null });
-    }
+  for (const f of fullBody) {
+    if (!usedKeys.has(comboKey(f.id, null))) unused.push({ top: f, bottom: null });
   }
-
   return unused;
 }
 
 export function getMaxOutfits(wardrobe) {
-  const tops = wardrobe.filter((g) => TOP_CATS.includes(g.category)).length;
-  const bottoms = wardrobe.filter((g) => BOTTOM_CATS.includes(g.category)).length;
-  const fullBody = wardrobe.filter((g) => FULL_CATS.includes(g.category)).length;
-  return tops * bottoms + fullBody;
+  const t = wardrobe.filter((g) => TOP_CATS.includes(g.category)).length;
+  const b = wardrobe.filter((g) => BOTTOM_CATS.includes(g.category)).length;
+  const f = wardrobe.filter((g) => FULL_CATS.includes(g.category)).length;
+  return t * b + f;
 }

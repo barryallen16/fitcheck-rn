@@ -11,7 +11,7 @@ export function WardrobeProvider({ children }) {
   const [outfits, setOutfits] = useState([]);
   const [tryOnHistory, setTryOnHistory] = useState([]);
   const [userPhoto, setUserPhotoState] = useState(null);
-  const [serverUrl, _setUrl] = useState('http://10.101.237.83:1234');
+  const [serverUrl, _setUrl] = useState('http://10.125.178.83:1234');
   const [serverOk, setServerOk] = useState(false);
   const [modelName, setModelName] = useState(null);
   const [booting, setBooting] = useState(true);
