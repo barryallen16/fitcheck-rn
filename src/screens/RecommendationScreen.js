@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe } from '../context/WardrobeContext';
+import { useApp } from '../context/AppContext';
+
 import lm from '../services/lmStudioService';
 import weather from '../services/weatherService';
 import ErrorBanner from '../components/ErrorBanner';
@@ -27,7 +28,7 @@ function getSlotLabel(cat) {
 }
 
 export default function RecommendationScreen({ navigation }) {
-  const { wardrobe, outfits, serverOk, isExhausted } = useWardrobe();
+  const { wardrobe, outfits, serverOk, isExhausted } =  useApp();
   const [baseId, setBaseId] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);

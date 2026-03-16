@@ -3,13 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe } from '../context/WardrobeContext';
+import { useApp } from '../context/AppContext';
 import { COLORS, TYPE, GAP, RAD } from '../constants/theme';
 import { todayStr } from '../utils/helpers';
 
 export default function ResultScreen({ route, navigation }) {
   const { recommendation: rec, weather: w, wardrobe } = route.params;
-  const { addOutfit, wearOutfit, userPhoto } = useWardrobe();
+  const { addOutfit, wearOutfit } = useApp();
   const savedRef = useRef(false);
   const [outfitId, setOutfitId] = useState(null);
   const [worn, setWorn] = useState(false);
@@ -120,6 +120,7 @@ export default function ResultScreen({ route, navigation }) {
             style={s.tryOnBtn}
             onPress={() => navigation.navigate('TryOn', {
               outfit: {
+                id: outfitId,
                 topId: topG?.id,
                 bottomId: botG?.id || null,
                 topLabel: rec.top_label,

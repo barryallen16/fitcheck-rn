@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useWardrobe } from '../context/WardrobeContext';
+import { useApp } from '../context/AppContext';
 import tryOnService from '../services/tryOnService';
 import ErrorBanner from '../components/ErrorBanner';
 import { COLORS, TYPE, GAP, RAD } from '../constants/theme';
@@ -24,7 +24,7 @@ const LOAD_STEPS = [
 
 export default function TryOnScreen({ route, navigation }) {
   const { outfit, wardrobe: routeWardrobe } = route.params || {};
-  const { userPhoto, setUserPhoto, wardrobe, addTryOn } = useWardrobe();
+  const { fullBodyPhoto: userPhoto, setFullBodyPhoto: setUserPhoto, wardrobe, setOutfitTryOn } = useApp();
 
   const [banner, setBanner] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -113,13 +113,8 @@ export default function TryOnScreen({ route, navigation }) {
 
       setResultImage(result.imageUri);
 
-      // Save to history
-      addTryOn({
-        resultImageUri: result.imageUri,
-        topLabel: topG.summary,
-        bottomLabel: botG?.summary || 'N/A',
-        userPhotoUri: userPhoto,
-      });
+      // Save to outfit
+      if (outfit?.id) setOutfitTryOn(outfit.id, result.imageUri);
 
       setBanner({ message: 'Try-on generated!', type: 'success' });
     } catch (err) {

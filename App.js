@@ -6,7 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { WardrobeProvider } from './src/context/WardrobeContext';
+import { AppProvider } from './src/context/AppContext';
 import HomeScreen from './src/screens/HomeScreen';
 import WardrobeScreen from './src/screens/WardrobeScreen';
 import AnalyzingScreen from './src/screens/AnalyzingScreen';
@@ -39,7 +39,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <WardrobeProvider>
+        <AppProvider>
           <NavigationContainer theme={navTheme}>
             <StatusBar style="light" />
             <Stack.Navigator
@@ -60,7 +60,7 @@ export default function App() {
               <Stack.Screen name="TryOn" component={TryOnScreen} />
             </Stack.Navigator>
           </NavigationContainer>
-        </WardrobeProvider>
+        </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
