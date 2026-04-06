@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 import {
   extractJSON, getSlot, comboKey,
   TOP_CATS, BOTTOM_CATS, FULL_CATS,
@@ -113,8 +114,17 @@ class LMStudioService {
     await this._ensureConnected();
     let base64;
     try {
-      base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
-    } catch (e) { throw new Error(`Cannot read image: ${e.message}`); }
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: 768 } }],
+        {
+          compress: 0.7,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        }
+      );
+      base64 = manipulatedImage.base64;
+    } catch (e) { throw new Error(`Cannot process or read image: ${e.message}`); }
 
     const payload = {
       model: this.modelId || 'default',
