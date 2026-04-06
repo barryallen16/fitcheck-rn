@@ -7,7 +7,7 @@ import {
 } from '../utils/helpers';
 import groq from './groqService';
 
-const DEFAULT_URL = 'http://10.125.178.83:1234';
+const DEFAULT_URL = 'http://192.168.29.187:1234';
 
 function fuzzyMatch(label, wardrobe) {
   if (!label || label === 'N/A') return null;
