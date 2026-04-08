@@ -42,18 +42,19 @@ function buildWardrobeSection(wardrobe) {
   return s;
 }
 
-function buildMessages(weatherStr, wardrobe, baseGarmentId, existingOutfits) {
+function buildMessages(weatherStr, wardrobe, baseGarmentId, existingOutfits, occasion) {
   const wardrobeSection = buildWardrobeSection(wardrobe);
+  const currentOccasion = occasion || 'General daily wear';
 
   let baseConstraint = '';
   if (baseGarmentId) {
     const bg = wardrobe.find((g) => g.id === baseGarmentId);
     if (bg) {
       const slot = getSlot(bg.category);
-      baseConstraint = `\nMANDATORY: Include "${bg.summary}" [${bg.category}] (${slot}).`;
-      if (slot === 'TOP') baseConstraint += ` Use as top_label. Pick a BOTTOM for bottom_label.`;
-      else if (slot === 'BOTTOM') baseConstraint += ` Use as bottom_label. Pick a TOP for top_label.`;
-      else if (slot === 'FULL-BODY') baseConstraint += ` Use as top_label. Set bottom_label to "N/A".`;
+      baseConstraint = `\nMANDATORY: You MUST include "${bg.summary}" [${bg.category}]. `;
+      if (slot === 'TOP') baseConstraint += `Set top_label to this. Find a matching bottom_label.`;
+      else if (slot === 'BOTTOM') baseConstraint += `Set bottom_label to this. Find a matching top_label.`;
+      else if (slot === 'FULL-BODY') baseConstraint += `Set top_label to this. Set bottom_label to "N/A".`;
       baseConstraint += '\n';
     }
   }
@@ -61,22 +62,38 @@ function buildMessages(weatherStr, wardrobe, baseGarmentId, existingOutfits) {
   let avoidSection = '';
   if (existingOutfits.length > 0) {
     const combos = existingOutfits.map((o) => `"${o.topLabel}" + "${o.bottomLabel}"`).slice(-10);
-    avoidSection = `\nDO NOT repeat:\n${combos.join('\n')}\n`;
+    avoidSection = `\nCRITICAL DO NOT REPEAT:\n${combos.join('\n')}\n`;
   }
 
   const hour = new Date().getHours();
   const mood = hour < 12 ? 'fresh morning' : hour < 17 ? 'stylish afternoon' : 'elegant evening';
 
-  const sys = `You are FitCheck's outfit engine. Recommend from the user's wardrobe ONLY.
-RULES:
-1. top_label = EXACT summary from TOPS or FULL-BODY
-2. bottom_label = EXACT summary from BOTTOMS, or "N/A" for full-body garments
-3. Never swap categories
-4. ONLY valid JSON output
+  // The System Prompt now strictly enforces the Occasion and anti-markdown JSON rules
+  const sys = `You are an expert AI fashion stylist. Recommend exactly ONE outfit combination from the user's wardrobe.
+Your recommendation MUST be highly appropriate for the weather and the OCCASION.
 
-JSON: {"top_label":"...","bottom_label":"...","colorLogic":"...","silhouetteLogic":"..."}`;
+STRICT RULES:
+1. top_label MUST be the exact summary of a garment from TOPS or FULL-BODY.
+2. bottom_label MUST be the exact summary of a garment from BOTTOMS. If using a FULL-BODY garment, bottom_label MUST be "N/A".
+3. Explain your choices explicitly considering the "${currentOccasion}" occasion.
+4. ABSOLUTELY NO markdown formatting, no backticks (\`\`\`), and no conversational text. Output ONLY a raw, valid JSON object.
 
-  const user = `Weather: ${weatherStr}\nVibe: ${mood}${baseConstraint}${avoidSection}\nWARDROBE:\n${wardrobeSection}\nOutput ONLY JSON.`;
+EXPECTED JSON SCHEMA:
+{
+  "top_label": "exact top or full-body name",
+  "bottom_label": "exact bottom name or N/A",
+  "colorLogic": "Brief explanation of why these colors suit the weather and ${currentOccasion}.",
+  "silhouetteLogic": "Brief explanation of why this fit suits the ${currentOccasion}."
+}`;
+
+  const user = `WEATHER: ${weatherStr}
+OCCASION: ${currentOccasion}
+VIBE: ${mood}
+${baseConstraint}${avoidSection}
+WARDROBE:
+${wardrobeSection}
+
+OUTPUT ONLY RAW JSON.`;
 
   return [{ role: 'system', content: sys }, { role: 'user', content: user }];
 }
@@ -148,11 +165,10 @@ Output ONLY: {"summary":"...","analyzed_garment":"...","category":"..."}`
   }
 
   // ── Recommendation (dual: LM Studio + Groq) ──────────
-  async getRecommendation(weatherStr, wardrobe, baseGarmentId, existingOutfits = []) {
-    const messages = buildMessages(weatherStr, wardrobe, baseGarmentId, existingOutfits);
+  async getRecommendation(weatherStr, wardrobe, baseGarmentId, existingOutfits = [], occasion = '') {
+  const messages = buildMessages(weatherStr, wardrobe, baseGarmentId, existingOutfits, occasion);
 
-    // Build LM Studio payload
-    const lmPayload = {
+  const lmPayload = {
       model: this.modelId || 'default',
       messages,
       temperature: 0.4,
@@ -200,24 +216,31 @@ Output ONLY: {"summary":"...","analyzed_garment":"...","category":"..."}`
     const isDup = existingOutfits.some((o) => comboKey(o.topId, o.bottomId) === key);
 
     if (isDup) {
-      // Try fallback: pick unused combo and get logic for it
-      const unused = getUnusedCombinations(wardrobe, existingOutfits);
-      if (unused.length > 0) {
-        const pick = unused[Math.floor(Math.random() * unused.length)];
-        return await this._getLogicForPair(pick.top, pick.bottom, weatherStr);
-      }
+    const unused = getUnusedCombinations(wardrobe, existingOutfits);
+    if (unused.length > 0) {
+      const pick = unused[Math.floor(Math.random() * unused.length)];
+      // Also update this call to include occasion
+      return await this._getLogicForPair(pick.top, pick.bottom, weatherStr, occasion);
     }
-
-    return validated;
+  }
+  return validated;
   }
 
-  async _getLogicForPair(topG, bottomG, weatherStr) {
-    const prompt = `Outfit for ${weatherStr}:
+async _getLogicForPair(topG, bottomG, weatherStr, occasion = '') {
+    const currentOccasion = occasion || 'General daily wear';
+    
+    // Explicitly enforce raw JSON and inject the occasion into the fallback rationale
+    const prompt = `Analyze this outfit for the weather (${weatherStr}) and occasion (${currentOccasion}).
 Top: "${topG.summary}" — ${topG.analyzed_garment}
 ${bottomG ? `Bottom: "${bottomG.summary}" — ${bottomG.analyzed_garment}` : 'Full-body garment.'}
-JSON ONLY: {"colorLogic":"...","silhouetteLogic":"..."}`;
 
-    // Dual again
+OUTPUT ONLY RAW JSON. NO Markdown. NO backticks.
+EXPECTED SCHEMA:
+{
+  "colorLogic": "Why these colors work for a ${currentOccasion}...",
+  "silhouetteLogic": "Why this silhouette works for a ${currentOccasion}..."
+}`;
+
     const msgs = [{ role: 'user', content: prompt }];
     const lmPayload = { model: this.modelId || 'default', messages: msgs, temperature: 0.3, max_tokens: 256, stream: false };
 
@@ -241,7 +264,7 @@ JSON ONLY: {"colorLogic":"...","silhouetteLogic":"..."}`;
       _bottomGarment: bottomG,
     };
   }
-
+  
   _validateRecommendation(rec, wardrobe, baseGarment) {
     let topM = fuzzyMatch(rec.top_label, wardrobe);
     let botM = fuzzyMatch(rec.bottom_label, wardrobe);

@@ -1,6 +1,6 @@
 // src/screens/RecommendationScreen.js
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert ,TextInput} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -35,7 +35,9 @@ export default function RecommendationScreen({ navigation }) {
   const [loadIdx, setLoadIdx] = useState(0);
   const [banner, setBanner] = useState(null);
   const intervalRef = useRef(null);
-
+// ... existing state ...
+const [occasion, setOccasion] = useState(''); // Add this
+const OCCASIONS = ['Office', 'Wedding', 'Gym', 'Casual', 'Party', 'Date Night']; // Add this
   const base = wardrobe.find((g) => g.id === baseId);
   const topCount = wardrobe.filter((g) => TOP_CATS.includes(g.category) || FULL_CATS.includes(g.category)).length;
   const botCount = wardrobe.filter((g) => BOTTOM_CATS.includes(g.category)).length;
@@ -74,8 +76,8 @@ export default function RecommendationScreen({ navigation }) {
     setLoading(true);
     try {
       const w = await weather.get();
-      const rec = await lm.getRecommendation(w.formatted, wardrobe, baseId, outfits);
-
+// Change this line inside the go() function:
+      const rec = await lm.getRecommendation(w.formatted, wardrobe, baseId, outfits, occasion);
       navigation.navigate('Result', {
         recommendation: rec,
         weather: w,
@@ -172,7 +174,30 @@ export default function RecommendationScreen({ navigation }) {
               <Text style={s.previewCat} numberOfLines={1}>{g.category}</Text>
             </View>
           ))}
+          {/* Occasion Selection */}
+
         </ScrollView>
+<Text style={s.secLabel}>Occasion (Optional)</Text>
+<View style={s.occContainer}>
+  <TextInput
+    style={s.occInput}
+    placeholder="e.g. Interview, Beach, Gala..."
+    placeholderTextColor={COLORS.textMuted}
+    value={occasion}
+    onChangeText={setOccasion}
+  />
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: GAP.sm }}>
+    {OCCASIONS.map((item) => (
+      <TouchableOpacity
+        key={item}
+        style={[s.occChip, occasion === item && s.occChipActive]}
+        onPress={() => setOccasion(item)}
+      >
+        <Text style={[s.occChipTxt, occasion === item && s.occChipTxtActive]}>{item}</Text>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+</View>
 
         {/* Generate */}
         <TouchableOpacity
@@ -248,4 +273,29 @@ const s = StyleSheet.create({
   goTxt: { color: COLORS.bg, fontSize: TYPE.lg, fontWeight: '700' },
   historyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: GAP.lg, gap: GAP.sm, marginTop: GAP.sm },
   historyTxt: { color: COLORS.accent, fontSize: TYPE.base, fontWeight: '600' },
+  occContainer: { marginBottom: GAP.xl },
+  occInput: {
+    backgroundColor: COLORS.card,
+    borderRadius: RAD.md,
+    padding: GAP.md,
+    color: COLORS.text,
+    fontSize: TYPE.base,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: GAP.sm,
+  },
+  occChip: {
+    paddingHorizontal: GAP.lg,
+    paddingVertical: GAP.sm,
+    borderRadius: RAD.full,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  occChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  occChipTxt: { color: COLORS.textDim, fontSize: TYPE.xs, fontWeight: '600' },
+  occChipTxtActive: { color: COLORS.bg },
 });
