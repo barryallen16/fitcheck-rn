@@ -34,3 +34,7 @@ export const PERSONA_COLORS = [
   '#E85454', '#D4A843', '#4DD0C4', '#A78BFA',
   '#F472B6', '#60A5FA', '#34D399', '#FBBF24',
 ];
+export const LMS_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+export const LMS_MODEL = "openai/gpt-oss-120b";
+
