@@ -48,7 +48,7 @@ FitCheck/
 │   │   ├── weatherService.js
 │   │   └── storageService.js
 │   ├── context/
-│   │   └── WardrobeContext.js
+│   │   └── AppContext.js
 │   ├── constants/
 │   │   └── theme.js
 │   └── utils/
