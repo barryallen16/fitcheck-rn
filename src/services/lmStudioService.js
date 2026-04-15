@@ -1,11 +1,10 @@
-import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import {
   extractJSON, getSlot, comboKey,
   TOP_CATS, BOTTOM_CATS, FULL_CATS,
   getUnusedCombinations,
 } from '../utils/helpers';
-import groq from './groqService';
+import api from './apiService';
 
 const DEFAULT_URL = 'http://192.168.29.187:1234';
 
@@ -157,7 +156,7 @@ Output ONLY: {"summary":"...","analyzed_garment":"...","category":"..."}`
     return this._parseGarment(text);
   }
 
-  // ── Recommendation (dual: LM Studio + Groq) ──────────
+  // ── Recommendation (dual: LM Studio + remote API) ────
   async getRecommendation(weatherStr, wardrobe, baseGarmentId, existingOutfits = []) {
     const messages = buildMessages(weatherStr, wardrobe, baseGarmentId, existingOutfits);
 
@@ -172,33 +171,31 @@ Output ONLY: {"summary":"...","analyzed_garment":"...","category":"..."}`
 
     // Fire BOTH simultaneously
     // LM Studio = slow (2B model, 10-30s)
-    // Groq = fast (70B model via cloud, 2-5s)
+    // API = fast (cloud model, 2-5s)
     // We wait for BOTH — response appears after LM Studio finishes
-    // We USE Groq's better response
+    // We USE the API's better response
 
-    const [lmResult, groqResult] = await Promise.allSettled([
+    const [lmResult, apiResult] = await Promise.allSettled([
       this._postSafe('/v1/chat/completions', lmPayload),
-      groq.call(messages, { temperature: 0.4 }),
+      api.call(messages, { temperature: 0.4 }),
     ]);
 
     let responseText = null;
-    let source = null;
 
-    // Prefer Groq (better quality from 70B)
-    if (groqResult.status === 'fulfilled' && groqResult.value) {
-      responseText = groqResult.value;
-      source = 'groq';
+    // Prefer the API (better quality)
+    if (apiResult.status === 'fulfilled' && apiResult.value) {
+      responseText = apiResult.value;
     }
     // Fallback to LM Studio
     if (!responseText && lmResult.status === 'fulfilled' && lmResult.value) {
       const lmText = lmResult.value?.choices?.[0]?.message?.content ?? '';
-      if (lmText) { responseText = lmText; source = 'lm'; }
+      if (lmText) responseText = lmText;
     }
 
     if (!responseText) {
       const lmErr = lmResult.status === 'rejected' ? lmResult.reason?.message : '';
-      const groqErr = groqResult.status === 'rejected' ? groqResult.reason?.message : '';
-      throw new Error(`Recommendation failed.\nLM Studio: ${lmErr || 'empty'}\nDetails: ${groqErr || 'empty'}`);
+      const apiErr = apiResult.status === 'rejected' ? apiResult.reason?.message : '';
+      throw new Error(`Recommendation failed.\nLM Studio: ${lmErr || 'empty'}\nDetails: ${apiErr || 'empty'}`);
     }
 
     const parsed = this._parseRecommendation(responseText);
@@ -231,13 +228,13 @@ JSON ONLY: {"colorLogic":"...","silhouetteLogic":"..."}`;
     const msgs = [{ role: 'user', content: prompt }];
     const lmPayload = { model: this.modelId || 'default', messages: msgs, temperature: 0.3, max_tokens: 256, stream: false };
 
-    const [lmR, groqR] = await Promise.allSettled([
+    const [lmR, apiR] = await Promise.allSettled([
       this._postSafe('/v1/chat/completions', lmPayload),
-      groq.call(msgs, { temperature: 0.3, maxTokens: 256 }),
+      api.call(msgs, { temperature: 0.3, maxTokens: 256 }),
     ]);
 
     let text = '';
-    if (groqR.status === 'fulfilled' && groqR.value) text = groqR.value;
+    if (apiR.status === 'fulfilled' && apiR.value) text = apiR.value;
     else if (lmR.status === 'fulfilled' && lmR.value) text = lmR.value?.choices?.[0]?.message?.content ?? '';
 
     const obj = extractJSON(text) || { colorLogic: 'Complementary palette.', silhouetteLogic: 'Balanced silhouettes.' };

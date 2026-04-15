@@ -1,10 +1,8 @@
-import { LMS_KEYS } from "../config/keys.js";
-import { LMS_MODEL, LMS_URL } from "../constants/theme.js";
-import { extractJSON } from "../utils/helpers";
+import { LMS_KEYS, LMS_MODEL, LMS_API_URL } from "../config/keys.js";
 
-class GroqService {
+class ApiService {
   constructor() {
-    this.keys = LMS_KEYS.filter((k) => k && k.startsWith("gsk_"));
+    this.keys = LMS_KEYS.filter(Boolean);
     this.keyIndex = 0;
   }
 
@@ -17,7 +15,8 @@ class GroqService {
   }
 
   async call(messages, { temperature = 0.4, maxTokens = 600 } = {}) {
-    if (this.keys.length === 0) throw new Error("No Groq keys configured.");
+    if (!LMS_API_URL) throw new Error("No API URL configured.");
+    if (this.keys.length === 0) throw new Error("No API keys configured.");
 
     let lastError = null;
     for (let attempt = 0; attempt < this.keys.length; attempt++) {
@@ -25,7 +24,7 @@ class GroqService {
       try {
         const controller = new AbortController();
         const tid = setTimeout(() => controller.abort(), 30000);
-        const res = await fetch(LMS_URL, {
+        const res = await fetch(LMS_API_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -47,7 +46,7 @@ class GroqService {
         }
         if (!res.ok) {
           const e = await res.text().catch(() => "");
-          throw new Error(`Groq ${res.status}: ${e.substring(0, 200)}`);
+          throw new Error(`API ${res.status}: ${e.substring(0, 200)}`);
         }
         const data = await res.json();
         return data?.choices?.[0]?.message?.content ?? "";
@@ -57,12 +56,12 @@ class GroqService {
           continue;
         }
         lastError = err;
-        if (err.message.includes("Groq")) throw err;
+        if (err.message.includes("API")) throw err;
         continue;
       }
     }
-    throw lastError || new Error("All Groq keys failed.");
+    throw lastError || new Error("All API keys failed.");
   }
 }
 
-export default new GroqService();
+export default new ApiService();
