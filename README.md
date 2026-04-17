@@ -1,91 +1,88 @@
 # FitCheck
 
-FitCheck is a multi-modular AI framework and heterogeneous wardrobe recommendation system. Designed specifically to handle a diverse range of clothing categories including complex Indian ethnic fashion like kurtas, sarees, and fusion wear. it provides intelligent outfit styling and virtual try-on capabilities entirely through edge inference and dedicated APIs.
+FitCheck is a React Native app for photographing clothes, getting outfit suggestions, and generating virtual try-ons.
+It runs on Expo.
+
 <img width="1920" height="1080" alt="demo-ss" src="https://github.com/user-attachments/assets/a79deedb-1230-4669-9938-63c6c4e30b6b" />
 
-## Architecture & Tech Stack
+## How it works
 
-This project is built to operate efficiently via local edge inference, ensuring privacy and reducing reliance on cloud-based LLM subscriptions. All text and styling reasoning is routed locally, while specialized endpoints handle complex image rendering:
+The app analyzes garment photos with a finetuned vision-language model and suggests outfits for the current weather.
+The model runs in LM Studio on your own machine.
+A remote OpenAI-compatible API can handle the same recommendation request.
+When that API is configured, the app prefers its answer and falls back to LM Studio if the request fails.
+Virtual try-on images come from Hugging Face Spaces.
 
-* **Frontend**: React Native (via Expo)
-* **Recommendation Engine**: **LM Studio** for local/edge inference. The application queries a finetuned 2B Vision-Language Model (VLM) to analyze garments and suggest outfits based on styling preferences.
-* **Virtual Try-On (VTON)**: **Hugging Face** serverless endpoints process and render the virtual try-on imagery, allowing users to visualize different garment combinations.
+The frontend is React Native with Expo.
+Garment analysis, outfit history, personas, and try-on results are stored on the device.
 
-## Models & Datasets
+## Models and datasets
 
-FitCheck relies on custom-trained models and specialized datasets to understand nuanced fashion categories.
+The styling model is a finetuned Qwen3-VL vision-language model in Q4_K_M GGUF format.
+Load it in LM Studio.
 
-* **Finetuned VLM (Stylist Engine)**: The core recommendation model is available in `Q4_K_M` Quantized GGUF format, specifically optimized for efficient edge inference via LM Studio.
-    * Model Weights: [FitCheck-Qwen3-VL-Stylist-GGUF](https://huggingface.co/barryallen16/FitCheck-Qwen3-VL-Stylist-GGUF)
-* **Datasets & Full Collection**: The complete repository featuring all datasets used to train the model, along with the base and finetuned weights, is organized in a dedicated Hugging Face collection.
-    * FitCheck Collection: [Hugging Face Collection](https://huggingface.co/collections/barryallen16/fitcheck)
+* Model weights: [FitCheck-Qwen3-VL-Stylist-GGUF](https://huggingface.co/barryallen16/FitCheck-Qwen3-VL-Stylist-GGUF)
+* Training datasets and model weights: [FitCheck collection](https://huggingface.co/collections/barryallen16/fitcheck)
 
-## Project Structure
+## Project structure
 
 ```text
 FitCheck/
 ├── App.js
 ├── app.json
 ├── package.json
-├── babel.config.js
 ├── assets/
-│   └── logo-placeholder.png
-├── src/
-│   ├── screens/
-│   │   ├── HomeScreen.js
-│   │   ├── WardrobeScreen.js
-│   │   ├── AnalyzingScreen.js
-│   │   ├── GarmentDetailScreen.js
-│   │   ├── RecommendationScreen.js
-│   │   └── ResultScreen.js
-│   ├── components/
-│   │   ├── GarmentCard.js
-│   │   ├── LoadingOverlay.js
-│   │   ├── ErrorBanner.js
-│   │   └── BaseGarmentSelector.js
-│   ├── services/
-│   │   ├── lmStudioService.js      # Handles local edge inference requests
-│   │   ├── weatherService.js
-│   │   └── storageService.js
-│   ├── context/
-│   │   └── AppContext.js
-│   ├── constants/
-│   │   └── theme.js
-│   └── utils/
-│       └── helpers.js
+└── src/
+    ├── screens/
+    ├── components/
+    ├── services/
+    ├── context/
+    ├── constants/
+    ├── config/
+    └── utils/
 ```
 
-## Execution Instructions
+## Running the app
 
-Follow these steps to set up and run FitCheck locally:
+### Prerequisites
 
-### 1. Prerequisites
-* **Bun** installed on your machine (`curl -fsSL https://bun.sh/install | bash`).
-* **Expo CLI** installed globally (optional, but recommended).
-* **LM Studio** installed on your local machine.
-* A valid **Hugging Face** account and API token for the VTON capabilities.
+* Node.js and npm.
+* LM Studio with the `Q4_K_M` model loaded and its local server running.
+* A Hugging Face token for virtual try-on.
+* Expo Go on a phone, or an Android or iOS emulator.
 
-### 2. Set Up Local Edge Inference (LM Studio)
-1.  Download the `Q4_K_M` quantized GGUF model from the [FitCheck-Qwen3-VL-Stylist-GGUF repository](https://huggingface.co/barryallen16/FitCheck-Qwen3-VL-Stylist-GGUF).
-2.  Open **LM Studio** and load the downloaded GGUF model.
-3.  Start the Local Server in LM Studio (typically broadcasts on `http://localhost:1234/v1`).
-4.  Ensure the `src/services/lmStudioService.js` file is correctly pointing to this local server port.
+### Install dependencies
 
-### 3. Install App Dependencies
-Navigate to the root directory of the React Native project and install the required packages using Bun:
 ```bash
 cd fitcheck-rn
-bun install
+npm install
 ```
 
-### 4. Configure Environment Variables
-Configure your environment variables for Hugging Face (VTON) and weather services. Ensure all styling prompt requests are routed strictly to your LM Studio local server.
+### Configure the app
 
-### 5. Run the Application
-Start the Expo development server utilizing Bun:
+Copy `src/config/example.keys.js` to `src/config/keys.js` and fill in the values you need.
+`keys.js` is ignored by git, so keep your real keys there.
+
+* `LMS_API_URL`: remote OpenAI-compatible chat completion endpoint.
+* `LMS_KEYS`: API keys for that endpoint.
+* `LMS_MODEL`: model name the endpoint expects.
+* `HF_TOKEN`: one or more Hugging Face tokens for try-on.
+
+If you leave the API values empty, recommendations use LM Studio only.
+Try-on needs a Hugging Face token.
+
+### Start LM Studio
+
+Load the model from the link above and start the local server.
+The app uses port `1234` by default.
+Set a different server URL in the app's server settings if yours is not on that port.
+
+### Start Expo
+
 ```bash
-bun start
-# or alternatively
-bunx expo start
+npm start
 ```
-From the terminal, press `a` to run on an Android emulator, `i` to run on an iOS simulator, or scan the QR code with the Expo Go app on a physical device.
+
+Press `a` for Android, `i` for iOS, or scan the QR code with Expo Go.
+
+The app asks for location access for weather-based suggestions and for photo library or camera access when you add garments.
