@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator'; // Add this import
 import {
   extractJSON, getSlot, comboKey,
   TOP_CATS, BOTTOM_CATS, FULL_CATS,
@@ -6,7 +7,7 @@ import {
 } from '../utils/helpers';
 import groq from './groqService';
 
-const DEFAULT_URL = 'http://10.125.178.83:1234';
+const DEFAULT_URL = 'http://192.168.29.187:1234';
 
 function fuzzyMatch(label, wardrobe) {
   if (!label || label === 'N/A') return null;
@@ -113,8 +114,21 @@ class LMStudioService {
     await this._ensureConnected();
     let base64;
     try {
-      base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
-    } catch (e) { throw new Error(`Cannot read image: ${e.message}`); }
+      // Resize to a width of 768px (maintains aspect ratio) and compress
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: 768 } }], 
+        { 
+          compress: 0.7, 
+          format: ImageManipulator.SaveFormat.JPEG, 
+          base64: true 
+        }
+      );
+      
+      base64 = manipulatedImage.base64;
+    } catch (e) { 
+      throw new Error(`Cannot process or read image: ${e.message}`); 
+    }
 
     const payload = {
       model: this.modelId || 'default',
